@@ -8,7 +8,11 @@ const RequestGrab = new Schema({
     note: String,
     date: {type: Date},
     idDriver: String,
-    state: String
+    state: String,
+    position: {
+        lat: Number,
+        lng: Number
+    }
 });
 // tao module 
 const requestGrab = mongoose.model('RequestGrab', RequestGrab, 'RequestGrab');
