@@ -7,7 +7,8 @@ const Driver = new Schema({
     position: {
         lat: Number,
         lng: Number
-    }
+    },
+    requestId: String
 });
 // tao module 
 const driver = mongoose.model('Driver', Driver, 'Driver');

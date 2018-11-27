@@ -72,7 +72,8 @@ io.on("connection", function (socket) {
             position: {
                 lat: 0,
                 lng: 0
-            }
+            },
+            requestId: ''
         })
         driver.save().then(() => {
             socket.emit("driver_is_online");
@@ -116,17 +117,17 @@ io.on("connection", function (socket) {
     })
 
     socket.on("client_create_request", function () {
-        io.sockets.emit('client_create_request');
+        io.sockets.emit('user_load_requests');
     })
 
     socket.on("identifier_located_request", function (data) {
-        io.sockets.emit('identifier_located_request');
+        io.sockets.emit('user_load_requests');
         //console.log('identifier_located_request has been')
         driverRepo.driverReady().then(drivers => {
             if (drivers.length > 0) {
                 var distanceDriver = [];
                 for (let driver of drivers) {
-                    distanceDriver.push(requestRepo.pointToDriver(data.position, driver));
+                    distanceDriver.push(requestRepo.pointToDriver(data, driver));
                 }
                 const result = Promise.all(distanceDriver)
                 result.then(values => {
@@ -137,7 +138,7 @@ io.on("connection", function (socket) {
                             if (values[i].path.distance < values[iMin].path.distance)
                                 iMin = i
                         }
-                        console.log(values[iMin]);
+                        console.log(`${values[iMin].driver.driverId}`);
                         io.to(`${values[iMin].driver.driverId}`).emit('driver_confirm_request', values[iMin]);
                     }
                 }).catch(err => console.log(err));
@@ -148,21 +149,35 @@ io.on("connection", function (socket) {
     socket.on('driver_discard_request', function (data) {
         infoValue.splice(iMin,1);
         iMin = 0;
-        for (let i = 1; i < values.length; i++) {
-            if (values[i].path < values[iMin].path)
+        for (let i = 1; i < infoValue.length; i++) {
+            if (infoValue[i].path < infoValue[iMin].path)
                 iMin = i
         }
-        io.to(values[iMin].driver.driverId).emit('drive_confirm_request', values[iMin]);
+        io.to(`${infoValue[iMin].driver.driverId}`).emit('drive_confirm_request', infoValue[iMin]);
     })
 
     socket.on('driver_accept_request', function (data) {
 
         console.log('driver_accept_request');
+        //io.to(`${data.driver.driverId}`).emit('driver_confirm_request', data);
+        // Driver.findOneAndUpdate({ driverId: data.driver.driverId },
+        //     {
+        //         $set: {
+        //             'state': 'driving',
+        //             'requestId': data.requestId
+        //         }
+        //     },
+        //     function (err, doc) {
+        //         if (doc) {
+        //             console.log(doc);
+        //             socket.emit("driver_is_ready");
+        //         }
+        //     })
 
     })
 
     socket.on("identifier_locating_request", function () {
-        io.sockets.emit('identifier_locating_request');
+        io.sockets.emit('user_load_requests');
     })
 });
 
