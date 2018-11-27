@@ -7,5 +7,5 @@ const token = new Schema({
     exp: Date,
 });
 // tao module 
-const rftoken = mongoose.model("RefreshToken",token);
+const rftoken = mongoose.model("RefreshToken",token,"RefreshToken");
 module.exports=rftoken;

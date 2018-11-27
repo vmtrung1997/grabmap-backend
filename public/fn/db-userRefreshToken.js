@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const Token = require('../models/token')
 
-var mongoURI = 'mongodb://localhost:27017/grab';
+var mongoURI = 'mongodb://localhost:27017/grab';//'mongodb://grab:grabmap2015@ds115154.mlab.com:15154/grabmap';
 mongoose.connect(mongoURI,{ useNewUrlParser: true });
 
 exports.deleteRefreshToken = (user) => {

@@ -5,7 +5,7 @@ var moment = require('moment');
 const dbToken = require('../fn/db-userRefreshToken');
 
 const SECRET = 'ABCDEF';
-const AC_LIFETIME = 600;
+const AC_LIFETIME = 6000;
 
 exports.generateAccessToken = userEntity => {
     var payload = {

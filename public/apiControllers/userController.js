@@ -12,7 +12,7 @@ var geocoder = NodeGeocoder({
 const User = require('../models/user');
 const ReToken = require('../models/token');
 var auth = require('../repos/authRepo');
-
+const Driver = require('../models/driver')
 router.post('/register', (req, res) =>{
     var userObject = req.body;
     userObject.password = md5(userObject.password);
@@ -33,8 +33,17 @@ router.post('/login',(req, res) => {
          null, function(error, result){
             if (result){
                 var userEntity = result;
+                if (userEntity.type == 'driver'){
+                    Driver.findByIdAndUpdate({username: userEntity.username},
+                        {
+                            $set: {
+                                'state': 'online'
+                            }
+                        })
+                }
                 var acToken = auth.generateAccessToken(userEntity);
                 var reToken = auth.generateRefreshToken();
+
                 auth.updateRefreshToken(result._id, reToken)
                 .then(data => {
                     res.statusCode = 201;

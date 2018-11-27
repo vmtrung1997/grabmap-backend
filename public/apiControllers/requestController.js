@@ -12,7 +12,7 @@ var geocoder = NodeGeocoder({
     apiKey: 'bf09a44e81634056a9b9c853b81c6c7a'
   });
 
-var mongoURI = 'mongodb://localhost:27017/grab';
+var mongoURI = 'mongodb://localhost:27017/grab';//'mongodb://grab:grabmap2015@ds115154.mlab.com:15154/grabmap'//
 mongoose.connect(mongoURI, { useNewUrlParser: true } );
 
 router.post('/create_request', (req, res) => {
@@ -34,11 +34,9 @@ router.post('/create_request', (req, res) => {
                 console.log(err);
             }
             else{
-                var io = req.app.get('socketio');
-                io.sockets.emit('client_create_request');
                 res.statusCode = 201
                 res.json({
-                createSuccess: true,
+                success: true,
                 data: result
             })
             }
@@ -70,7 +68,7 @@ router.post('/located_request', (req, res) => {
     pos.lat = parseFloat(req.body.locationGeoCode.lat);
     pos.lng = parseFloat(req.body.locationGeoCode.lng);
     var id = new ObjectId(request._id);
-
+    console.log(id);
     RequestGrab.findByIdAndUpdate(id,
         {
             $set: {
@@ -97,7 +95,13 @@ router.post('/located_request', (req, res) => {
 router.post('/locate_request', (req, res) => {
     var id = new ObjectId(req.body.idRequest);
     console.log(id);
-    RequestGrab.findOne({_id: id}, function(err, result){
+    RequestGrab.findByIdAndUpdate(id,
+        {
+            $set: {
+                'state': 'locating',
+                'date': moment().format('YYYY-MM-DD HH:mm:ss')
+            }
+        }, function(err, result){
         if (result){
             geocoder.geocode(result.address, function(error, data) {
                 if (data){
