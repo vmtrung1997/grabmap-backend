@@ -24,6 +24,7 @@ var verifyAccessToken = require('./public/repos/authRepo').verifyAccessToken;
 var requestRepo = require('./public/repos/requestRepo');
 var driverRepo = require('./public/repos/driverRepo')
 var driverCtrl = require('./public/apiControllers/driverController')
+var managerCtrl = require('./public/apiControllers/managerController')
 
 
 app.use('/api/request', verifyAccessToken, requestCtrl);
@@ -32,6 +33,7 @@ app.use('/api/orders', verifyAccessToken, orderCtrl);
 app.use('/api/logout', verifyAccessToken, logoutCtrl);
 
 app.use('./api/driver', verifyAccessToken, driverCtrl);
+app.use('/api/manager', verifyAccessToken, managerCtrl);
 
 var server = require("http").Server(app);
 var io = require("socket.io")(server);
