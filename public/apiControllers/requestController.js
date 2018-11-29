@@ -25,7 +25,16 @@ router.post('/create_request', (req, res) => {
             date: new Date(),
             idDriver: "",
             state: "not_locate",
-            locationGeocode: []
+            position: {
+                lat: 0,
+                lng: 0
+            },
+            driverPosition: {
+                lat: 0,
+                lng: 0
+            }
+            
+            
         })
         i_request.save((err,result) => {
             if (err){
@@ -65,8 +74,8 @@ router.post('/get_requests', (req, res) => {
 router.post('/located_request', (req, res) => {
     var request = req.body.request;
     var pos = {};
-    pos.lat = parseFloat(req.body.locationGeoCode.lat);
-    pos.lng = parseFloat(req.body.locationGeoCode.lng);
+    pos.lat = parseFloat(req.body.position.lat);
+    pos.lng = parseFloat(req.body.position.lng);
     var id = new ObjectId(request._id);
     console.log(id);
     RequestGrab.findByIdAndUpdate(id,

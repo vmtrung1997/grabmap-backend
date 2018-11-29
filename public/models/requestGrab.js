@@ -12,6 +12,10 @@ const RequestGrab = new Schema({
     position: {
         lat: Number,
         lng: Number
+    },
+    driverPosition: {
+        lat: Number,
+        lng: Number
     }
 });
 // tao module 

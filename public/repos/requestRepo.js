@@ -10,7 +10,7 @@ exports.pointToDriver = function (request, driver) {
 
     return new Promise((res, rej) => {
         axios.get(url).then(data => {
-            res({driver: driver,request: request._id, path: data.data.paths[0]});
+            res({driver: driver,request: request, path: data.data.paths[0]});
         }).catch(error => {
             rej(error)
         })

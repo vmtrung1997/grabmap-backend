@@ -6,6 +6,9 @@ var express = require('express'),
 var app = express();
 const mongoose = require('mongoose');
 const Driver = require('./public/models/driver');
+const RequestGrab = require('./public/models/requestGrab')
+const ObjectId = mongoose.mongo.ObjectId;
+const haversine = require('haversine')
 
 var mongoURI = 'mongodb://localhost:27017/grab';//'mongodb://grab:grabmap2015@ds115154.mlab.com:15154/grabmap';
 mongoose.connect(mongoURI, { useNewUrlParser: true });
@@ -32,7 +35,7 @@ app.use('/api/user', userCtrl);
 app.use('/api/orders', verifyAccessToken, orderCtrl);
 app.use('/api/logout', verifyAccessToken, logoutCtrl);
 
-app.use('./api/driver', verifyAccessToken, driverCtrl);
+app.use('/api/driver', verifyAccessToken, driverCtrl);
 app.use('/api/manager', verifyAccessToken, managerCtrl);
 
 var server = require("http").Server(app);
@@ -149,33 +152,135 @@ io.on("connection", function (socket) {
     })
 
     socket.on('driver_discard_request', function (data) {
+        console.log('driver_discard_request');
         infoValue.splice(iMin,1);
+        console.log(typeof(infoValue));
         iMin = 0;
         for (let i = 1; i < infoValue.length; i++) {
             if (infoValue[i].path < infoValue[iMin].path)
                 iMin = i
         }
-        io.to(`${infoValue[iMin].driver.driverId}`).emit('drive_confirm_request', infoValue[iMin]);
+        console.log(infoValue[iMin])
+        io.to(`${infoValue[iMin].driver.driverId}`).emit('driver_confirm_request', infoValue[iMin]);
     })
 
     socket.on('driver_accept_request', function (data) {
 
         console.log('driver_accept_request');
         //io.to(`${data.driver.driverId}`).emit('driver_confirm_request', data);
-        // Driver.findOneAndUpdate({ driverId: data.driver.driverId },
-        //     {
-        //         $set: {
-        //             'state': 'driving',
-        //             'requestId': data.requestId
-        //         }
-        //     },
-        //     function (err, doc) {
-        //         if (doc) {
-        //             console.log(doc);
-        //             socket.emit("driver_is_ready");
-        //         }
-        //     })
+        Driver.findOneAndUpdate({ driverId: data.driver.driverId },
+            {
+                $set: {
+                    'state': 'request_accepted',
+                    'requestId': data.request.request._id
+                }
+            },
+            function (err, doc) {
+                if (doc) {
+                    //socket.emit("driver_had_request");
+                }
+            })
+        console.log(data.request);
+        var requestId = new ObjectId(data.request.request._id)
+        RequestGrab.findOneAndUpdate({_id: requestId}, {
+            $set: {
+                'state': 'request_accepted',
+                'idDriver': data.driver.driverId,
+                'driverPosition.lat': data.driver.position.lat,
+                'driverPosition.lng': data.driver.position.lng
+            }
+        },
+        function (err, doc) {
+            if (doc){
+                console.log(doc);
+                socket.emit("user_load_requests");
+            }
+        })
+    })
 
+    socket.on("driver_starting_request", function (data) {
+        Driver.findOneAndUpdate({ driverId: data.driver.driverId },
+            {
+                $set: {
+                    'state': 'starting',
+                    'requestId': data.request.requestId
+                }
+            },
+            function (err, doc) {
+                if (doc) {
+                    socket.emit("driver_had_request");
+                }
+            })
+        var requestId = new ObjectId(data.request.request._id)
+        RequestGrab.findOneAndUpdate({_id: requestId}, {
+            $set: {
+                'state': 'moving',
+            }
+        },
+        function (err, doc) {
+            if (doc){
+                socket.emit("user_load_requests");
+            }
+        })
+    })
+
+    socket.on("driver_standby", function (data) {
+        Driver.findOneAndUpdate({ driverId: data.driver.driverId },
+            {
+                $set: {
+                    'state': 'standby'
+                }
+            },
+            function (err, doc) {
+                if (doc) {
+                    console.log(doc)
+                }
+            })
+    })
+
+    socket.on("driver_moving", function(data){
+        const start = {
+            latitude: data.start.lat,
+            longitude: data.start.lng
+        };
+        const end = {
+            latitude: data.end.lat,
+            longitude: data.end.lng
+        }
+       var distance = haversine(start, end, {unit: 'meter'});
+       io.to(`${data.driver.driverId}`).emit('drive_moving_response', {returnData: data, distance:distance});
+    })
+
+    socket.on("driver_finish", function(data){
+        const start = {
+            latitude: data.point.lat,
+            longitude: data.point.lng
+        };
+        const end = {
+            latitude: data.request.position.lat,
+            longitude: data.request.position.lng,
+        }
+        var distance = haversine(start, end, {unit: 'meter'});
+        if (distance < 100){
+            io.to(`${data.driver.driverId}`).emit('drive_finished', {res: true, msg: "success"});
+            var requestId = new ObjectId(data.request.request._id)
+            RequestGrab.findOneAndUpdate({_id: requestId}, {
+                $set: {
+                    'state': 'finished'
+                }
+            },
+            function (err, doc) {
+                if (doc){
+                    console.log(doc);
+                    socket.emit("user_load_requests");
+                }
+        })
+        } else {
+            io.to(`${data.driver.driverId}`).emit('drive_finished', {res: false, msg: "fail"});
+        }
+    })
+    socket.on("identifier_locating_request", function () {
+        io.sockets.emit('user_load_requests');
     })
 
     socket.on("identifier_locating_request", function () {

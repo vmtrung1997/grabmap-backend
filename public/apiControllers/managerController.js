@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const RequestGrab = require('../models/requestGrab');
-const Driver = require('../models/driver');
+const User = require('../models/user');
 const express = require('express');
 const router = express.Router();
 const ObjectId = require('mongoose').mongo.ObjectId;
@@ -12,10 +12,10 @@ mongoose.connect(mongoURI, { useNewUrlParser: true } );
 router.post('/get_detail', (req, res) => {
 	var id = new ObjectId(req.body.idRequest);
     RequestGrab.findOne({_id: id }, function(err, dataRequest){
-    	if(result){
+    	if(dataRequest){
     		var idDriver = dataRequest.idDriver;
-	    	Driver.findOne({_id: idDriver}, function(error, dataDriver){
-	    		if(data){
+	    	User.findOne({_id: idDriver}, function(error, dataDriver){
+	    		if(dataDriver){
 	    			res.statusCode = 201;
 	    			res.json({
 	    				request: dataRequest,
