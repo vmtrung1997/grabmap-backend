@@ -6,7 +6,7 @@ mongoose.connect(mongoURI,{ useNewUrlParser: true });
 
 exports.driverReady = function(){
     return new Promise((res,rej) => 
-        Driver.find({state: 'ready'})
+        Driver.find({state: 'READY'})
         .exec()
         .then(docs => res(docs))
         .catch(error => rej(error))

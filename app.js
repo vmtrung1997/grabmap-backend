@@ -73,7 +73,7 @@ io.on("connection", function (socket) {
         socket.join(data.id);
         var driver = new Driver({
             driverId: data.id,
-            state: 'online',
+            state: 'ONLINE',
             position: {
                 lat: 0,
                 lng: 0
@@ -81,7 +81,7 @@ io.on("connection", function (socket) {
             requestId: ''
         })
         driver.save().then(() => {
-            socket.emit("driver_is_online");
+            socket.emit("driver_change_state", 'ONLINE');
         }).catch(err => console.log(err));
     })
 
@@ -89,7 +89,7 @@ io.on("connection", function (socket) {
         Driver.findOneAndUpdate({ driverId: data.driverId },
             {
                 $set: {
-                    'state': 'ready',
+                    'state': 'READY',
                     'position': {
                         lat: data.position.lat,
                         lng: data.position.lng
@@ -99,7 +99,7 @@ io.on("connection", function (socket) {
             function (err, doc) {
                 if (doc) {
                     console.log(doc);
-                    socket.emit("driver_is_ready");
+                    socket.emit("driver_change_state", 'READY');
                 }
             })
 
@@ -127,9 +127,10 @@ io.on("connection", function (socket) {
 
     socket.on("identifier_located_request", function (data) {
         io.sockets.emit('user_load_requests');
-        //console.log('identifier_located_request has been')
+        console.log('identifier_located_request has been')
         driverRepo.driverReady().then(drivers => {
             if (drivers.length > 0) {
+                console.log('has driver');
                 var distanceDriver = [];
                 for (let driver of drivers) {
                     distanceDriver.push(requestRepo.pointToDriver(data, driver));
@@ -154,14 +155,29 @@ io.on("connection", function (socket) {
     socket.on('driver_discard_request', function (data) {
         console.log('driver_discard_request');
         infoValue.splice(iMin,1);
-        console.log(typeof(infoValue));
-        iMin = 0;
-        for (let i = 1; i < infoValue.length; i++) {
-            if (infoValue[i].path < infoValue[iMin].path)
-                iMin = i
+        if (infoValue.length == 0){
+            let id = new ObjectId(data.request.request._id)
+            console.log(id);
+            RequestGrab.findOneAndUpdate({_id: id}, {
+                $set: {
+                    'state': 'not driver'
+                }
+            },
+            function (err, doc) {
+                if (doc){
+                    io.sockets.emit('user_load_requests');
+                }
+            })
+        } else {
+            iMin = 0;
+            for (let i = 1; i < infoValue.length; i++) {
+                if (infoValue[i].path < infoValue[iMin].path)
+                    iMin = i
+            }
+            console.log(infoValue[iMin])
+            io.to(`${infoValue[iMin].driver.driverId}`).emit('driver_confirm_request', infoValue[iMin]);
         }
-        console.log(infoValue[iMin])
-        io.to(`${infoValue[iMin].driver.driverId}`).emit('driver_confirm_request', infoValue[iMin]);
+        
     })
 
     socket.on('driver_accept_request', function (data) {
@@ -171,20 +187,20 @@ io.on("connection", function (socket) {
         Driver.findOneAndUpdate({ driverId: data.driver.driverId },
             {
                 $set: {
-                    'state': 'request_accepted',
+                    'state': 'REQUEST ACCEPTED',
                     'requestId': data.request.request._id
                 }
             },
             function (err, doc) {
                 if (doc) {
-                    //socket.emit("driver_had_request");
+                    socket.emit("driver_change_state", 'REQUEST ACCEPTED');
                 }
             })
         console.log(data.request);
         var requestId = new ObjectId(data.request.request._id)
         RequestGrab.findOneAndUpdate({_id: requestId}, {
             $set: {
-                'state': 'request_accepted',
+                'state': 'request accepted',
                 'idDriver': data.driver.driverId,
                 'driverPosition.lat': data.driver.position.lat,
                 'driverPosition.lng': data.driver.position.lng
@@ -193,7 +209,7 @@ io.on("connection", function (socket) {
         function (err, doc) {
             if (doc){
                 console.log(doc);
-                socket.emit("user_load_requests");
+                io.sockets.emit('user_load_requests');
             }
         })
     })
@@ -202,13 +218,13 @@ io.on("connection", function (socket) {
         Driver.findOneAndUpdate({ driverId: data.driver.driverId },
             {
                 $set: {
-                    'state': 'starting',
+                    'state': 'MOVING',
                     'requestId': data.request.requestId
                 }
             },
             function (err, doc) {
                 if (doc) {
-                    socket.emit("driver_had_request");
+                    socket.emit("driver_change_state", 'MOVING');
                 }
             })
         var requestId = new ObjectId(data.request.request._id)
@@ -219,21 +235,23 @@ io.on("connection", function (socket) {
         },
         function (err, doc) {
             if (doc){
-                socket.emit("user_load_requests");
+                io.sockets.emit('user_load_requests');
             }
         })
     })
 
     socket.on("driver_standby", function (data) {
-        Driver.findOneAndUpdate({ driverId: data.driver.driverId },
+        console.log(data);
+        Driver.findOneAndUpdate({ driverId: data.driverId },
             {
                 $set: {
-                    'state': 'standby'
+                    'state': 'STANDBY'
                 }
             },
             function (err, doc) {
                 if (doc) {
                     console.log(doc)
+                    socket.emit("driver_change_state", 'STANDBY');
                 }
             })
     })
@@ -272,7 +290,7 @@ io.on("connection", function (socket) {
             function (err, doc) {
                 if (doc){
                     console.log(doc);
-                    socket.emit("user_load_requests");
+                    io.sockets.emit('user_load_requests');
                 }
         })
         } else {
