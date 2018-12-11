@@ -9,7 +9,7 @@ var NodeGeocoder = require('node-geocoder');
 
 var geocoder = NodeGeocoder({
     provider: 'opencage',
-    apiKey: 'bf09a44e81634056a9b9c853b81c6c7a'
+    apiKey: '2a24c2d95bcc49359eace760131c6f87'
   });
 
 router.get('/driver_located', (req, res) => {
@@ -19,8 +19,9 @@ router.get('/driver_located', (req, res) => {
 })
 
 router.post('/click_position', (req, res) =>{
-	console.log(req.body.position);
-	geocoder.geocode(`${req.body.position.lat}, ${req.body.position.lng}`, (err, doc) =>{
+	var position = `${req.body.position.lat}, ${req.body.position.lng}`;
+	console.log(position);
+	geocoder.geocode(position, (err, doc) =>{
 		if (err)
 		{
 			console.log('View on console log')

@@ -6,7 +6,7 @@ var NodeGeocoder = require('node-geocoder');
  
 var geocoder = NodeGeocoder({
   provider: 'opencage',
-  apiKey: '38df4c9a8b2b44f6a5cb6b89dfd2e473'
+  apiKey: '2a24c2d95bcc49359eace760131c6f87'
 });
 
 const User = require('../models/user');

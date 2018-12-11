@@ -125,6 +125,10 @@ io.on("connection", function (socket) {
         io.sockets.emit('user_load_requests');
     })
 
+    socket.on("idendifier_locate_request", function () {
+        io.sockets.emit('user_load_requests');
+    })
+    
     socket.on("identifier_located_request", function (data) {
         io.sockets.emit('user_load_requests');
         console.log('identifier_located_request has been')
